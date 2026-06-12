@@ -16,6 +16,10 @@ import type { AnalyzeResponse, DetectedMediaType, TraceProofReport } from "@/typ
 
 type SelectedType = Exclude<DetectedMediaType, "unsupported">;
 
+// Generous client-side ceiling so the browser surfaces a clear timeout message
+// instead of hanging forever if an upstream proxy silently drops the request.
+const CLIENT_ANALYZE_TIMEOUT_MS = 12 * 60 * 1000;
+
 type SystemStatus = {
   model_server: { available: boolean; health?: string; models_ready?: boolean };
   anthropic: { configured: boolean; available: boolean; model: string };
@@ -73,6 +77,9 @@ export default function AnalyzePage() {
       setRunId((id) => id + 1);
       setProgress("running");
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), CLIENT_ANALYZE_TIMEOUT_MS);
+
       try {
         const formData = new FormData();
         formData.append("file", selectedFile);
@@ -81,25 +88,52 @@ export default function AnalyzePage() {
         if (claimLocation.trim()) formData.append("location", claimLocation.trim());
         if (claimDatetime.trim()) formData.append("datetime", claimDatetime.trim());
 
-        const response = await fetch("/api/analyze", { method: "POST", body: formData });
-        const body = (await response.json().catch(() => null)) as AnalyzeResponse | null;
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
 
-        if (!body) {
-          throw new Error("The analysis service returned an unreadable response.");
+        // Read as text first so a non-JSON gateway/proxy error (e.g. a 502 HTML
+        // page from the platform) produces a clear message instead of "unreadable".
+        const rawText = await response.text();
+        let body: AnalyzeResponse | null = null;
+        try {
+          body = rawText ? (JSON.parse(rawText) as AnalyzeResponse) : null;
+        } catch {
+          body = null;
         }
 
-        if (body.status === "completed" && body.report) {
+        if (body?.status === "completed" && body.report) {
           setReport(body.report);
           saveSessionReport(body.report);
           setProgress("done");
           return;
         }
 
-        const readinessMsg = body.model_readiness?.message;
-        throw new Error(body.error ?? readinessMsg ?? "Analysis could not be completed.");
+        if (body) {
+          const readinessMsg = body.model_readiness?.message;
+          throw new Error(body.error ?? readinessMsg ?? "Analysis could not be completed.");
+        }
+
+        // No JSON body — fall back to an HTTP-status-aware message.
+        if (!response.ok) {
+          throw new Error(
+            response.status >= 502 && response.status <= 504
+              ? "The analysis is taking longer than the server gateway allows. Please try again, or use a smaller file."
+              : `The analysis service returned an error (HTTP ${response.status}).`,
+          );
+        }
+        throw new Error("The analysis service returned an unreadable response.");
       } catch (cause) {
         setProgress("failed");
-        setError(cause instanceof Error ? cause.message : "Analysis could not be completed.");
+        if (cause instanceof DOMException && cause.name === "AbortError") {
+          setError("Analysis timed out before the server responded. Please try again, or use a smaller file.");
+        } else {
+          setError(cause instanceof Error ? cause.message : "Analysis could not be completed.");
+        }
+      } finally {
+        clearTimeout(timeout);
       }
     },
     [claim, claimLocation, claimDatetime],
