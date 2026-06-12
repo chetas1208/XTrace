@@ -30,19 +30,19 @@ export function JuaRealityContextCard({
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="sm:col-span-3">
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Claim</dt>
-          <dd className="mt-1 text-sm text-text-primary">{context?.claim || mediaClaim?.claim || "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{context?.claim || mediaClaim?.claim || "N/A"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Location</dt>
-          <dd className="mt-1 text-sm text-text-primary">{context?.location || mediaClaim?.location || "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{context?.location || mediaClaim?.location || "N/A"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Datetime</dt>
-          <dd className="mt-1 text-sm text-text-primary">{context?.datetime || mediaClaim?.datetime || "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{context?.datetime || mediaClaim?.datetime || "N/A"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Reality-context risk</dt>
-          <dd className="mt-1 text-sm text-text-primary">{context?.reality_context_risk ?? "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{context?.reality_context_risk ?? "N/A"}</dd>
         </div>
       </dl>
 

@@ -89,7 +89,7 @@ class MesoNetDetector(BaseModelWrapper):
                 confidence=max(risk, 1.0 - risk),
                 label=label,
                 evidence=[f"MesoNet processed {len(predictions)} sampled frames"],
-                limitations=["MesoNet output semantics are preserved in raw frame scores; aggregate risk is 1 - mean sigmoid output"],
+                limitations=["MesoNet output semantics are preserved in raw frame scores; aggregate risk is one minus the mean sigmoid output."],
                 raw={"frame_scores": predictions.astype(float).tolist(), "mean_sigmoid": realness},
                 runtime_ms=elapsed_ms(start),
                 device=self.device,

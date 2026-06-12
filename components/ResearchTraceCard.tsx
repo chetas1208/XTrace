@@ -20,7 +20,7 @@ export function ResearchTraceCard({ guild }: { guild: GuildTrace | null }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-text-primary">
           <Boxes className="h-5 w-5 text-cyan-signal" aria-hidden="true" />
-          Research trace — Guild AI run ledger
+          Research trace: Guild AI run ledger
         </h2>
         {guild ? (
           <span className={cn("rounded-md border px-2 py-1 text-xs font-medium", STATUS_CLASS[guild.status])}>
@@ -47,7 +47,7 @@ export function ResearchTraceCard({ guild }: { guild: GuildTrace | null }) {
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
             <div>
               <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Run ID</dt>
-              <dd className="mt-1 break-all font-mono text-xs text-text-primary">{guild.run_id ?? "—"}</dd>
+              <dd className="mt-1 break-all font-mono text-xs text-text-primary">{guild.run_id ?? "N/A"}</dd>
             </div>
             <div>
               <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Operation</dt>

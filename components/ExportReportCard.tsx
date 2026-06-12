@@ -51,8 +51,8 @@ function buildPrintableHtml(report: TraceProofReport): string {
         <td>${escapeHtml(s.model_name)}</td>
         <td>${escapeHtml(s.modality)}</td>
         <td>${escapeHtml(s.status)}</td>
-        <td>${s.score === null ? "—" : escapeHtml(s.score.toFixed(3))}</td>
-        <td>${escapeHtml(s.label ?? "—")}</td>
+        <td>${s.score === null ? "N/A" : escapeHtml(s.score.toFixed(3))}</td>
+        <td>${escapeHtml(s.label ?? "N/A")}</td>
       </tr>`,
     )
     .join("");
@@ -61,7 +61,7 @@ function buildPrintableHtml(report: TraceProofReport): string {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>XTrace report — ${escapeHtml(report.file_name)}</title>
+<title>XTrace report: ${escapeHtml(report.file_name)}</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; margin: 32px; line-height: 1.5; }

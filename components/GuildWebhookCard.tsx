@@ -16,7 +16,7 @@ export function GuildWebhookCard({ webhook }: { webhook: GuildWebhookResult | nu
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-text-primary">
           <Webhook className="h-5 w-5 text-cyan-signal" aria-hidden="true" />
-          Guild — Agent Session Trace
+          Guild Agent Session Trace
         </h2>
         <span className={cn("rounded-md border px-2 py-1 text-xs font-medium", STATUS_CLASS[status])}>{status}</span>
       </div>

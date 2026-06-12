@@ -37,7 +37,7 @@ export function ModelReadinessCard({ readiness }: { readiness: ModelReadiness })
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Loaded</dt>
           <dd className="mt-1 text-sm text-text-primary">
-            {readiness.loaded.length ? readiness.loaded.join(", ") : "—"}
+            {readiness.loaded.length ? readiness.loaded.join(", ") : "N/A"}
           </dd>
         </div>
         <div>

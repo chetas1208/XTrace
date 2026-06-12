@@ -163,7 +163,7 @@ export default function AnalyzePage() {
             <p className="text-sm uppercase tracking-[0.2em] text-cyan-signal">XTrace web agent</p>
             <h1 className="mt-3 text-3xl font-semibold text-text-primary sm:text-4xl">Media forensics command center</h1>
             <p className="mt-3 max-w-3xl leading-7 text-text-secondary">
-              Drop media to launch the XTrace agent. Analysis starts immediately — no submit button. The agent detects
+              Drop media to launch the XTrace agent. Analysis starts immediately, with no submit button. The agent detects
               media type, routes through Cloudflare tunnel to GPU forensics, reasons with Claude, and returns an
               auditable report stored in this session only.
             </p>

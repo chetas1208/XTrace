@@ -28,9 +28,9 @@ services:
         value: claude-haiku-4-5
       # Keep the report generation well under platform proxy limits.
       - key: ANTHROPIC_MAX_TOKENS
-        value: "1400"
+        value: "4096"
       - key: ANTHROPIC_TIMEOUT_MS
-        value: "60000"
+        value: "90000"
       # Required GPU model manifest per modality (must match the model server inventory).
       # If left unset the readiness gate fails open, but setting them keeps the gate honest.
       - key: REQUIRED_IMAGE_MODELS

@@ -46,7 +46,7 @@ export function RealityContextCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-text-primary">
           <CloudSun className="h-5 w-5 text-cyan-signal" aria-hidden="true" />
-          Reality context — Jua
+          Reality context: Jua
         </h2>
         {context ? (
           <span className={cn("rounded-md border px-2 py-1 text-xs font-medium", statusClass(context.status))}>
@@ -67,16 +67,16 @@ export function RealityContextCard({
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Location</dt>
-          <dd className="mt-1 text-sm text-text-primary">{mediaClaim.location || "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{mediaClaim.location || "N/A"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Date / time</dt>
-          <dd className="mt-1 text-sm text-text-primary">{mediaClaim.datetime || "—"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{mediaClaim.datetime || "N/A"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Context risk</dt>
           <dd className="mt-1 text-sm text-text-primary">
-            {context?.reality_context_risk ?? "—"}
+            {context?.reality_context_risk ?? "N/A"}
           </dd>
         </div>
       </dl>

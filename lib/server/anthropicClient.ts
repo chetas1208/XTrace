@@ -37,7 +37,9 @@ const SYSTEM_PROMPT =
   "model names, metadata, timestamps, provenance facts, Guild events, Composio actions, Jua weather results, or file " +
   "properties. You must never say the media is fake or real with certainty. Use careful language: unknown provenance, " +
   "synthetic-media risk indicators, model-backed signal, requires human review, not definitive. If models are " +
-  "unavailable, explicitly list that as a limitation. Preserve risk score, confidence, label, and model signals exactly.\n\n" +
+  "unavailable, explicitly list that as a limitation. Preserve risk score, confidence, label, and model signals exactly. " +
+  "Write clean, readable prose: never use em dashes or en dashes, and never use a spaced hyphen as a dash; " +
+  "use commas, semicolons, or separate sentences instead.\n\n" +
   "Respond with ONLY a single valid JSON object (no markdown, no code fences, no prose) of this exact shape:\n" +
   '{"summary": string, "strongest_evidence": string[], "weakest_evidence": string[], "limitations": string[], ' +
   '"human_action": string, "confidence_rationale": string, "agent_steps": [{"name": string, "status": ' +
@@ -101,10 +103,54 @@ function extractJson(content: string): unknown | null {
     try {
       return JSON.parse(cleaned.slice(start, end + 1));
     } catch {
-      return null;
+      // Fall through to truncation repair.
+    }
+  }
+
+  // Best-effort repair for a response that was cut off mid-object: balance any
+  // unclosed strings/brackets so the leading (complete) fields still parse.
+  if (start !== -1) {
+    const repaired = balanceJson(cleaned.slice(start));
+    if (repaired) {
+      try {
+        return JSON.parse(repaired);
+      } catch {
+        return null;
+      }
     }
   }
   return null;
+}
+
+/** Close any unterminated string/array/object so a truncated JSON object parses. */
+function balanceJson(input: string): string | null {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let lastSafe = -1;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
+    else if (ch === "}" || ch === "]") stack.pop();
+    // Remember a position where the structure is balanced after a complete value.
+    if (!inString && stack.length >= 1 && (ch === "}" || ch === "]" || ch === '"' || /[0-9eltruefalsn]/i.test(ch))) {
+      lastSafe = i;
+    }
+  }
+  if (stack.length === 0) return null;
+  let body = input;
+  if (inString) body = body.slice(0, lastSafe + 1); // drop a half-written string value
+  // Trim a dangling trailing comma or partial key before closing.
+  body = body.replace(/,\s*("[^"]*)?$/s, "");
+  const closers = [...stack].reverse().join("");
+  return body + closers;
 }
 
 function coerceFields(parsed: unknown): ReasoningTextFields | null {
@@ -182,13 +228,56 @@ async function callClaudeModel(params: {
 }
 
 /** Union the model's limitations with the deterministic ones (never drop a real limitation). */
+const LIMITATION_STOPWORDS = new Set([
+  "the", "a", "an", "is", "are", "of", "to", "and", "or", "not", "for", "this",
+  "that", "with", "from", "by", "in", "on", "its", "it", "be", "as", "no", "was",
+  "were", "but", "so", "one", "any", "all", "should", "before", "after",
+]);
+
+function significantTokens(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !LIMITATION_STOPWORDS.has(w)),
+  );
+}
+
+/** Fraction of `subset`'s significant tokens that also appear in `superset`. */
+function coverage(subset: Set<string>, superset: Set<string>): number {
+  if (subset.size === 0) return 0;
+  let common = 0;
+  for (const t of subset) if (superset.has(t)) common += 1;
+  return common / subset.size;
+}
+
+/**
+ * Prefer the (richer) model limitations and only append deterministic ones that
+ * are not already semantically covered, so the UI shows one clean list instead
+ * of near-duplicate pairs.
+ */
+function mergeLimitations(modelLimits: string[], deterministicLimits: string[]): string[] {
+  const base = dedupe(modelLimits.filter(Boolean));
+  if (base.length === 0) return dedupe(deterministicLimits.filter(Boolean));
+  const baseTokens = base.map(significantTokens);
+  const extra: string[] = [];
+  for (const limit of deterministicLimits) {
+    if (!limit) continue;
+    const tokens = significantTokens(limit);
+    const covered = baseTokens.some((bt) => coverage(tokens, bt) >= 0.5);
+    if (!covered) extra.push(limit);
+  }
+  return dedupe([...base, ...extra]);
+}
+
 function mergeWithDeterministic(model: ReasoningTextFields, deterministic: ReasoningTextFields): ReasoningTextFields {
   return {
     summary: model.summary || deterministic.summary,
     human_action: model.human_action || deterministic.human_action,
     strongest_evidence: model.strongest_evidence.length ? model.strongest_evidence : deterministic.strongest_evidence,
     weakest_evidence: model.weakest_evidence.length ? model.weakest_evidence : deterministic.weakest_evidence,
-    limitations: dedupe([...model.limitations, ...deterministic.limitations]),
+    limitations: mergeLimitations(model.limitations, deterministic.limitations),
     confidence_rationale: model.confidence_rationale || deterministic.confidence_rationale,
     report_blocks: model.report_blocks.length ? model.report_blocks : deterministic.report_blocks,
     agent_steps: model.agent_steps.length ? model.agent_steps : deterministic.agent_steps ?? [],
@@ -222,7 +311,9 @@ export async function generateClaudeXTraceSummary(params: {
   const effectivePrimary = useHighQuality && highQualityModel ? highQualityModel : primaryModel;
 
   const timeoutMs = Number(process.env.ANTHROPIC_TIMEOUT_MS ?? 120000);
-  const maxTokens = Number(process.env.ANTHROPIC_MAX_TOKENS ?? 1800);
+  // Large enough that the full JSON report (summary + evidence + blocks) never
+  // truncates mid-object; truncated JSON would fail parsing and force a fallback.
+  const maxTokens = Number(process.env.ANTHROPIC_MAX_TOKENS ?? 4096);
   const temperature = Number(process.env.ANTHROPIC_TEMPERATURE ?? 0.2);
 
   const finalize = (

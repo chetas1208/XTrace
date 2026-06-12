@@ -71,7 +71,7 @@ export function SponsorStatusCard() {
                 <span className={cn("h-2 w-2 rounded-full", dotClass(entry))} aria-hidden="true" />
                 <span className="text-sm font-medium text-text-primary">{label}</span>
               </div>
-              <p className="mt-1 text-xs text-text-secondary">{entry?.role ?? "—"}</p>
+              <p className="mt-1 text-xs text-text-secondary">{entry?.role ?? "N/A"}</p>
               <p className="mt-1 text-xs text-text-secondary">{sponsors ? statusText(entry) : "…"}</p>
             </div>
           );

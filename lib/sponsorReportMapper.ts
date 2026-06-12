@@ -22,8 +22,8 @@ function num(value: number | null, digits = 2): string {
 
 function signalSummaryLines(report: TraceProofReport): string[] {
   return report.signals.map((s) => {
-    const score = s.score === null ? "—" : s.score.toFixed(3);
-    return `- ${s.model_name} (${s.modality}): ${s.status}, score ${score}, device ${s.device || "—"}`;
+    const score = s.score === null ? "N/A" : s.score.toFixed(3);
+    return `- ${s.model_name} (${s.modality}): ${s.status}, score ${score}, device ${s.device || "N/A"}`;
   });
 }
 

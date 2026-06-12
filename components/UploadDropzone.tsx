@@ -83,7 +83,7 @@ export function UploadDropzone({ onFileSelected, disabled = false }: Props) {
         </span>
         <span className="mt-5 text-lg font-semibold text-text-primary">Drop media to launch XTrace agent</span>
         <span className="mt-2 max-w-lg text-sm leading-6 text-text-secondary">
-          Drag and drop a single file, or click to browse. The media type is detected automatically — no mode
+          Drag and drop a single file, or click to browse. The media type is detected automatically, with no mode
           selection required.
         </span>
         <span className="mt-4 text-xs uppercase tracking-[0.14em] text-text-secondary">

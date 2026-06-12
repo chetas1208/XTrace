@@ -8,7 +8,7 @@ const CORE_CARDS = [
   {
     title: "Multimodal GPU Forensics",
     description:
-      "Image, video, and audio detectors run on a tunneled HPC GPU server and return real model-backed signals — never random scores.",
+      "Image, video, and audio detectors run on a tunneled HPC GPU server and return real model-backed signals, never random scores.",
     icon: FileSearch,
   },
   {
@@ -43,7 +43,7 @@ export default function Home() {
           <p className="mt-4 text-2xl font-medium text-text-primary">Follow the signal. Verify the source.</p>
           <p className="mt-5 max-w-2xl leading-7 text-text-secondary">
             XTrace is a web agent for multimodal media forensics. It finds AI media footprints across images, videos,
-            and audio, then turns real GPU model evidence into an explainable provenance-risk report — not a fake/real
+            and audio, then turns real GPU model evidence into an explainable provenance-risk report, not a fake/real
             verdict.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">

@@ -92,7 +92,7 @@ export function formatConfidence(value: number | null): string {
 
 /** Per-signal score is typically a 0-1 probability. */
 export function formatSignalScore(value: number | null): string {
-  if (value === null || Number.isNaN(value)) return "—";
+  if (value === null || Number.isNaN(value)) return "N/A";
   return value.toFixed(3);
 }
 
@@ -103,7 +103,7 @@ export function signalScorePercent(value: number | null): number {
 }
 
 export function formatRuntime(ms: number): string {
-  if (!Number.isFinite(ms)) return "—";
+  if (!Number.isFinite(ms)) return "N/A";
   if (ms < 1000) return `${Math.round(ms)} ms`;
   return `${(ms / 1000).toFixed(1)} s`;
 }

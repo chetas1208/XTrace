@@ -58,6 +58,35 @@ export function dedupe(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
+/**
+ * Normalize report prose for display: replace em/en dashes and spaced-hyphen
+ * "dashes" with commas (never touching numeric expressions like "1 - x"), and
+ * tidy the resulting punctuation/whitespace. Keeps UI text clean and dash-free.
+ */
+export function cleanProse(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/([^\d\s])\s+-\s+(?=\S)/g, "$1, ")
+    .replace(/\s*,\s*,\s*/g, ", ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([.;,])/g, "$1")
+    .trim();
+}
+
+export function cleanList(items: string[]): string[] {
+  return items.map(cleanProse).filter(Boolean);
+}
+
+function cleanBlocks(blocks: XTraceUIBlock[]): XTraceUIBlock[] {
+  return blocks.map((b) => ({
+    ...b,
+    title: cleanProse(b.title),
+    content: cleanProse(b.content),
+    items: cleanList(b.items ?? []),
+  }));
+}
+
 function buildSummary(label: FinalLabel, strongestEvidence: string[], limitations: string[]): string {
   const parts: string[] = [LABEL_LEAD[label]];
   const evidence = strongestEvidence.filter(Boolean);
@@ -148,8 +177,8 @@ export function buildDeterministicReasoning(
 
   const degraded = response.signals.filter((s) => s.status !== "success");
   const weakest = degraded.map((s) => {
-    const reason = s.limitations[0] ? ` — ${s.limitations[0]}` : "";
-    return `${s.model_name}: ${s.status}${reason}`;
+    const reason = s.limitations[0] ? `: ${s.limitations[0]}` : "";
+    return `${s.model_name} (${s.status})${reason}`;
   });
 
   const successCount = response.signals.length - degraded.length;
@@ -189,6 +218,21 @@ export function mapAnalysisResponseToReport(params: {
 
   const reportedMediaType: DetectedMediaType = response.media_type ?? detectedMediaType;
 
+  // Display signals get clean, dash-free evidence/limitations. The untouched
+  // raw_model_response below preserves the literal GPU output for auditing.
+  const displaySignals = response.signals.map((s) => ({
+    ...s,
+    evidence: cleanList(s.evidence),
+    limitations: cleanList(s.limitations),
+  }));
+  const cleanReality: RealityContextSignal | null = params.realityContext
+    ? {
+        ...params.realityContext,
+        evidence: cleanList(params.realityContext.evidence),
+        limitations: cleanList(params.realityContext.limitations),
+      }
+    : null;
+
   return {
     job_id: jobId,
     request_id: response.request_id,
@@ -199,16 +243,16 @@ export function mapAnalysisResponseToReport(params: {
     final_label: response.fusion.label,
     risk_score: response.fusion.risk_score,
     confidence: response.fusion.confidence,
-    signals: response.signals,
+    signals: displaySignals,
     raw_model_response: response as unknown as Record<string, unknown>,
-    summary: reasoning.summary,
-    human_action: reasoning.human_action,
-    strongest_evidence: reasoning.strongest_evidence,
-    weakest_evidence: reasoning.weakest_evidence,
-    limitations: reasoning.limitations,
-    confidence_rationale: reasoning.confidence_rationale,
+    summary: cleanProse(reasoning.summary),
+    human_action: cleanProse(reasoning.human_action),
+    strongest_evidence: cleanList(reasoning.strongest_evidence),
+    weakest_evidence: cleanList(reasoning.weakest_evidence),
+    limitations: cleanList(reasoning.limitations),
+    confidence_rationale: cleanProse(reasoning.confidence_rationale),
     reasoning_layer: reasoning.reasoning_layer,
-    report_blocks: reasoning.report_blocks,
+    report_blocks: cleanBlocks(reasoning.report_blocks),
     agent_steps: params.agentSteps ?? reasoning.agent_steps ?? [],
     guild: params.guild ?? null,
     guild_webhook: null,
@@ -222,6 +266,6 @@ export function mapAnalysisResponseToReport(params: {
       anthropic: { configured: false, status: "unavailable" },
     },
     media_claim: params.mediaClaim ?? null,
-    reality_context: params.realityContext ?? null,
+    reality_context: cleanReality,
   };
 }

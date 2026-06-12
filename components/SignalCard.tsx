@@ -78,7 +78,7 @@ export function SignalCard({ signal }: { signal: ModelSignal }) {
         </span>
         <span className="flex items-center gap-1.5">
           <Cpu className="h-3.5 w-3.5" aria-hidden="true" />
-          {signal.device || "—"}
+          {signal.device || "N/A"}
         </span>
       </div>
     </article>
