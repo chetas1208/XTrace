@@ -57,20 +57,28 @@ else
   exit 1
 fi
 
+# Reuse an existing healthy tunnel process if one is already running
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null; then
+  EXISTING_URL="$(grep -oE 'https://[A-Za-z0-9.-]+\.trycloudflare\.com' "$LOG_FILE" 2>/dev/null | tail -n1 || true)"
+  if [ -n "$EXISTING_URL" ]; then
+    echo "Existing cloudflared (pid $(cat "$PID_FILE")) — reusing $EXISTING_URL"
+    write_tunnel_info "running" "$EXISTING_URL" "$(cat "$PID_FILE")"
+    exit 0
+  fi
+  echo "Existing cloudflared pid $(cat "$PID_FILE") but no URL in log; restarting tunnel." | tee -a "$LOG_FILE"
+  kill "$(cat "$PID_FILE")" 2>/dev/null || true
+  sleep 2
+fi
+
 {
   echo "Using cloudflared: $CLOUDFLARED"
   "$CLOUDFLARED" --version
-} > "$LOG_FILE" 2>&1
+} >> "$LOG_FILE" 2>&1
 
-# Reuse an existing healthy tunnel process if one is already running
-if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null; then
-  echo "Existing cloudflared process (pid $(cat "$PID_FILE")) already running; reusing it." | tee -a "$LOG_FILE"
-else
-  echo "Starting cloudflared tunnel: $LOCAL_URL" | tee -a "$LOG_FILE"
-  nohup "$CLOUDFLARED" tunnel --url "$LOCAL_URL" --no-autoupdate >> "$LOG_FILE" 2>&1 &
-  disown
-  echo $! > "$PID_FILE"
-fi
+echo "Starting cloudflared tunnel: $LOCAL_URL" | tee -a "$LOG_FILE"
+nohup "$CLOUDFLARED" tunnel --url "$LOCAL_URL" --no-autoupdate >> "$LOG_FILE" 2>&1 &
+disown
+echo $! > "$PID_FILE"
 
 PID="$(cat "$PID_FILE")"
 

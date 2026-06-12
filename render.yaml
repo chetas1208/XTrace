@@ -26,6 +26,19 @@ services:
         value: claude-sonnet-4-6
       - key: ANTHROPIC_REPORT_FALLBACK_MODEL
         value: claude-haiku-4-5
+      # Keep the report generation well under platform proxy limits.
+      - key: ANTHROPIC_MAX_TOKENS
+        value: "1400"
+      - key: ANTHROPIC_TIMEOUT_MS
+        value: "60000"
+      # Required GPU model manifest per modality (must match the model server inventory).
+      # If left unset the readiness gate fails open, but setting them keeps the gate honest.
+      - key: REQUIRED_IMAGE_MODELS
+        value: "UniversalFakeDetect,capcheck/ai-human-generated-image-detection"
+      - key: REQUIRED_AUDIO_MODELS
+        value: "AASIST,garystafford/wav2vec2-deepfake-voice-detector"
+      - key: REQUIRED_VIDEO_MODELS
+        value: "MesoNet,Temporal Analyzer"
       - key: GUILD_ENABLED
         value: "true"
       - key: GUILD_WEBHOOK_URL

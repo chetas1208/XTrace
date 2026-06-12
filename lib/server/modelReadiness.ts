@@ -19,12 +19,20 @@ function flag(value: string | undefined, fallback = false): boolean {
   return value.toLowerCase() === "true" || value === "1";
 }
 
-function parseRequiredList(envKey: string): string[] {
-  return (process.env[envKey] ?? "")
+function parseRequiredList(envKey: string, fallback = ""): string[] {
+  const raw = (process.env[envKey] ?? fallback).trim();
+  return raw
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 }
+
+const DEFAULT_IMAGE_MODELS = "UniversalFakeDetect,capcheck/ai-human-generated-image-detection";
+const DEFAULT_AUDIO_MODELS = "AASIST,garystafford/wav2vec2-deepfake-voice-detector";
+const DEFAULT_VIDEO_MODELS = "MesoNet,Temporal Analyzer";
+// Provenance is computed as a post-analysis signal, not a loaded registry model,
+// so it is validated signal-side (see validatePostAnalysisModelPolicy), not here.
+const DEFAULT_PROVENANCE_MODELS = "";
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
@@ -64,16 +72,17 @@ function isFailed(entry: InventoryEntry): boolean {
   return status === "failed" || status === "error" || Boolean(entry.last_error);
 }
 
+function isAvailable(entry: InventoryEntry): boolean {
+  if (entry.enabled === false) return false;
+  if (isFailed(entry)) return false;
+  return true;
+}
+
 function isUnavailable(entry: InventoryEntry): boolean {
   if (entry.enabled === false) return true;
+  if (isFailed(entry)) return true;
   const status = (entry.status ?? "").toLowerCase();
-  return (
-    status === "unavailable" ||
-    status === "disabled" ||
-    status === "not_loaded" ||
-    status === "not loaded" ||
-    (!isLoaded(entry) && !isFailed(entry))
-  );
+  return status === "unavailable" || status === "disabled";
 }
 
 function findEntry(entries: InventoryEntry[], requiredName: string): InventoryEntry | null {
@@ -87,10 +96,10 @@ function findEntry(entries: InventoryEntry[], requiredName: string): InventoryEn
 }
 
 function requiredForMediaType(mediaType?: string): string[] {
-  const image = parseRequiredList("REQUIRED_IMAGE_MODELS");
-  const audio = parseRequiredList("REQUIRED_AUDIO_MODELS");
-  const video = parseRequiredList("REQUIRED_VIDEO_MODELS");
-  const provenance = parseRequiredList("REQUIRED_PROVENANCE_MODELS");
+  const image = parseRequiredList("REQUIRED_IMAGE_MODELS", DEFAULT_IMAGE_MODELS);
+  const audio = parseRequiredList("REQUIRED_AUDIO_MODELS", DEFAULT_AUDIO_MODELS);
+  const video = parseRequiredList("REQUIRED_VIDEO_MODELS", DEFAULT_VIDEO_MODELS);
+  const provenance = parseRequiredList("REQUIRED_PROVENANCE_MODELS", DEFAULT_PROVENANCE_MODELS);
 
   if (!mediaType) {
     return [...new Set([...image.slice(0, 1), ...audio.slice(0, 1), ...video.slice(0, 1), ...provenance])];
@@ -110,6 +119,23 @@ function classifyRequired(entries: InventoryEntry[], requiredNames: string[]): M
   const failed: string[] = [];
   const loaded: string[] = [];
 
+  // No specific manifest required for this modality (e.g. REQUIRED_*_MODELS unset).
+  // Fail open: do not block the pipeline on a missing manifest. The post-analysis
+  // policy still verifies that real model-backed signals were returned.
+  if (requiredNames.length === 0) {
+    const anyLoaded = entries.some((e) => isLoaded(e));
+    return {
+      ready: true,
+      missing: [],
+      unavailable: [],
+      failed: [],
+      loaded: entries.filter(isLoaded).map(entryName).filter(Boolean),
+      message: anyLoaded
+        ? "No required-model manifest set for this media type; GPU models are loaded and will be used."
+        : "No required-model manifest set for this media type; proceeding to GPU inference.",
+    };
+  }
+
   for (const name of requiredNames) {
     const entry = findEntry(entries, name);
     if (!entry) {
@@ -120,15 +146,17 @@ function classifyRequired(entries: InventoryEntry[], requiredNames: string[]): M
       loaded.push(name);
     } else if (isFailed(entry)) {
       failed.push(name);
-    } else if (isUnavailable(entry)) {
-      unavailable.push(name);
-    } else {
+    } else if (!isAvailable(entry)) {
       unavailable.push(name);
     }
+    // not_loaded but enabled: lazy-load OK — not counted as unavailable
   }
 
   const strict = flag(process.env.REQUIRED_MODELS_STRICT, true);
-  const ready = strict ? loaded.length > 0 && missing.length === 0 && failed.length === 0 && unavailable.length === 0 : loaded.length > 0;
+  const availableCount = requiredNames.length - missing.length - unavailable.length - failed.length;
+  const ready = strict
+    ? availableCount > 0 && missing.length === 0 && failed.length === 0
+    : loaded.length > 0 || availableCount > 0;
 
   let message = "Required GPU models are ready.";
   if (!ready) {
@@ -136,6 +164,8 @@ function classifyRequired(entries: InventoryEntry[], requiredNames: string[]): M
     else if (failed.length) message = `Failed required models: ${failed.join(", ")}.`;
     else if (unavailable.length) message = `Unavailable required models: ${unavailable.join(", ")}.`;
     else message = "Required GPU models are not ready.";
+  } else if (loaded.length === 0 && availableCount > 0) {
+    message = "Required models are registered and will load on first inference (lazy-load).";
   }
 
   return { ready, missing, unavailable, failed, loaded, message };
@@ -186,7 +216,7 @@ export function validatePostAnalysisModelPolicy(params: {
   }
 
   // Provenance: show but don't block unless strict provenance env is set
-  const provenanceRequired = parseRequiredList("REQUIRED_PROVENANCE_MODELS");
+  const provenanceRequired = parseRequiredList("REQUIRED_PROVENANCE_MODELS", DEFAULT_PROVENANCE_MODELS);
   const provenanceStrict = flag(process.env.REQUIRED_PROVENANCE_STRICT, false);
   if (provenanceStrict) {
     for (const name of provenanceRequired) {
