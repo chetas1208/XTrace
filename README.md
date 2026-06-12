@@ -18,9 +18,9 @@ Browser
 -> local HPC FastAPI GPU model server
 -> real GPU-hosted image/audio/video models
 -> back to Render Next.js API route
+-> optional Jua context check for weather/location/time claims
 -> Anthropic Claude reasoning layer
 -> Guild webhook event
--> optional Jua context check
 -> response returned to browser
 -> browser renders XTrace report immediately
 ```
@@ -87,6 +87,40 @@ Backend (server-side only):
 12. Confirm no direct browser calls to tunnel or vendor URLs.
 
 See `.env.example` for the full server-side variable list.
+
+## Guild Setup
+
+1. Open `app.guild.ai`.
+2. Create or open workspace `xtrace-forensics`.
+3. Create agent `xtrace-orchestrator`.
+4. If multiple agents are allowed, also create `xtrace-evidence-auditor`, `xtrace-action-reviewer`, `xtrace-reality-context-reviewer`, and `xtrace-report-governor`.
+5. Create webhook trigger for `xtrace.analysis.completed`.
+6. Copy the webhook URL into `GUILD_WEBHOOK_URL`.
+7. Copy the signing secret into `GUILD_WEBHOOK_SIGNING_SECRET`.
+8. Run a test analysis and confirm Guild receives the event/session.
+
+If only one Guild agent exists, use `xtrace-orchestrator` as the real agent. The webhook payload still contains the other planned sub-agent roles.
+
+## Composio GitHub Setup
+
+1. Open the Composio dashboard.
+2. Go to Toolkits.
+3. Open the GitHub toolkit.
+4. Connect a GitHub account using OAuth or the managed app.
+5. Authorize access to the repo that will receive XTrace issues.
+6. Confirm the tool slug for creating an issue.
+7. Put `COMPOSIO_GITHUB_OWNER`, `COMPOSIO_GITHUB_REPO`, and `COMPOSIO_GITHUB_CREATE_ISSUE_TOOL` in Render env.
+8. Test `POST /api/actions/create-github-issue` with a real XTrace report.
+
+GitHub issue creation is the primary Composio action. Slack and Notion remain optional and return unavailable unless configured.
+
+## Jua Setup
+
+1. Get a Jua API key.
+2. Add `JUA_API_KEY` to Render env.
+3. Set `JUA_ENABLED=true`.
+4. Test with a weather/location/time claim: `This flood video was filmed in San Francisco yesterday.`
+5. Confirm the Jua card says success or a clear unavailable/failure status.
 
 ## Develop
 

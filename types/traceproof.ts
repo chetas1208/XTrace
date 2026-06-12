@@ -83,12 +83,22 @@ export interface ModelReadiness {
 /** Guild webhook delivery result (no secrets). */
 export interface GuildWebhookResult {
   enabled: boolean;
-  status: SponsorStatus;
+  status: "success" | "failed" | "unavailable";
   event_id: string | null;
+  webhook_configured: boolean;
   webhook_url_configured: boolean;
+  signed: boolean;
   event_type: string;
+  agents: XTraceAgentPlan;
   limitations: string[];
 }
+
+export interface XTraceAgentPlanRole {
+  name: string;
+  role: string;
+}
+
+export type XTraceAgentPlan = XTraceAgentPlanRole[];
 
 /** Sponsor tool statuses for trace/webhook payloads. */
 export interface SponsorStatuses {
@@ -216,7 +226,7 @@ export interface MediaClaim {
 export interface RealityContextSignal {
   provider: "Jua";
   status: SponsorStatus;
-  claim: string;
+  claim: string | null;
   location: string | null;
   datetime: string | null;
   evidence: string[];
@@ -242,15 +252,21 @@ export interface FeedbackRecord {
 }
 
 /** Composio — action type and recorded result. */
-export type ComposioActionType = "github_issue" | "slack" | "notion";
+export type ComposioActionType = "github_issue" | "slack_summary" | "notion_page";
 
 export interface ComposioActionResult {
+  provider: "Composio";
   action: ComposioActionType;
   status: SponsorStatus;
+  external_url: string | null;
   message: string;
+  raw: Record<string, unknown> | null;
+  /** Backward-compatible alias used by older UI code. */
   url: string | null;
   timestamp: string;
 }
+
+export type ComposioActionStatus = ComposioActionResult;
 
 /** The exact contract the FastAPI model server returns from /v1/analyze/*. */
 export interface ModelServerAnalysisResponse {

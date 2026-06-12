@@ -1,23 +1,23 @@
 "use client";
 
-import { Download, Layers3 } from "lucide-react";
+import { Layers3 } from "lucide-react";
 import { AgentStepsPanel } from "@/components/AgentStepsPanel";
-import { ActionPanel } from "@/components/ActionPanel";
 import { ClaudeReasoningCard } from "@/components/ClaudeReasoningCard";
+import { ComposioActionPanel } from "@/components/ComposioActionPanel";
 import { EvidenceGraph } from "@/components/EvidenceGraph";
-import { GuildWebhookCard } from "@/components/GuildWebhookCard";
+import { ExportReportCard } from "@/components/ExportReportCard";
+import { GuildAgentTraceCard } from "@/components/GuildAgentTraceCard";
 import { HumanActionCard } from "@/components/HumanActionCard";
+import { JuaRealityContextCard } from "@/components/JuaRealityContextCard";
 import { LimitationsCard } from "@/components/LimitationsCard";
 import { MediaPreview } from "@/components/MediaPreview";
 import { ModelReadinessCard } from "@/components/ModelReadinessCard";
 import { OpenUIReportBlocks } from "@/components/OpenUIReportBlocks";
 import { RawJsonViewer } from "@/components/RawJsonViewer";
-import { RealityContextCard } from "@/components/RealityContextCard";
 import { ReportHeader } from "@/components/ReportHeader";
 import { RiskScoreCard } from "@/components/RiskScoreCard";
 import { SignalCard } from "@/components/SignalCard";
 import { SponsorStatusCard } from "@/components/SponsorStatusCard";
-import { Button } from "@/components/ui/button";
 import type { TraceProofReport } from "@/types/traceproof";
 
 type Props = {
@@ -93,15 +93,9 @@ export function ReportView({ report, previewFile, mediaSrc }: Props) {
         />
       </div>
 
-      <GuildWebhookCard webhook={report.guild_webhook} />
+      <GuildAgentTraceCard webhook={report.guild_webhook} />
 
-      {report.media_claim ? (
-        <RealityContextCard
-          jobId={report.job_id}
-          mediaClaim={report.media_claim}
-          initialContext={report.reality_context}
-        />
-      ) : null}
+      <JuaRealityContextCard mediaClaim={report.media_claim} context={report.reality_context} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <LimitationsCard limitations={report.limitations} />
@@ -109,7 +103,7 @@ export function ReportView({ report, previewFile, mediaSrc }: Props) {
       </section>
 
       <section id="actions" className="scroll-mt-24">
-        <ActionPanel report={report} />
+        <ComposioActionPanel report={report} />
       </section>
 
       <SponsorStatusCard />
@@ -130,16 +124,7 @@ export function ReportView({ report, previewFile, mediaSrc }: Props) {
             agent_steps: report.agent_steps,
           }}
         />
-        <section className="xt-glass rounded-2xl p-5">
-          <h2 className="text-lg font-semibold text-text-primary">Export Report</h2>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Signed PDF/JSON export is reserved for the production evidence-package pipeline.
-          </p>
-          <Button type="button" disabled variant="muted" className="mt-5 w-full">
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Export unavailable
-          </Button>
-        </section>
+        <ExportReportCard report={report} />
       </div>
     </div>
   );

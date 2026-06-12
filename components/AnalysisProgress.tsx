@@ -9,11 +9,11 @@ export type ProgressStatus = "idle" | "running" | "done" | "failed";
 const STAGES = [
   "Intake Agent",
   "Media Router",
-  "Cloudflare Tunnel",
   "GPU Forensics",
+  "Jua Reality Context",
   "Claude Reasoning",
-  "Guild Webhook",
-  "XTrace Report",
+  "Guild Webhook Trace",
+  "Report Ready",
 ] as const;
 
 // Index of the last "in-flight" stage. While running we advance up to here and

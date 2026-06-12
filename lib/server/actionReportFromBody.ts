@@ -37,7 +37,7 @@ export function reportFromActionBody(body: unknown) {
     },
     sponsor_statuses: DEFAULT_SPONSOR_STATUSES,
     media_claim: null,
-    reality_context: null,
+    reality_context: minimal.reality_context ?? null,
     raw_model_response: {},
     reasoning_layer: minimal.reasoning_layer ?? {
       provider: "Anthropic Claude",

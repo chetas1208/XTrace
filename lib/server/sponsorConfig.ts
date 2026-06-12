@@ -19,10 +19,6 @@ function trimmed(value: string | undefined): string {
 
 export interface GuildConfig {
   enabled: boolean;
-  apiKey: string;
-  workspaceId: string;
-  agentId: string;
-  appUrl: string;
   webhookUrl: string;
   signinSecret: string;
   webhookSigningSecret: string;
@@ -35,26 +31,17 @@ export function getGuildConfig(): GuildConfig {
     trimmed(process.env.GUILD_WEBHOOK_SIGNING_SECRET) || trimmed(process.env.GUILD_SIGNIN_SECRET);
   return {
     enabled: flag(process.env.GUILD_ENABLED, true),
-    apiKey: trimmed(process.env.GUILD_API_KEY),
-    workspaceId: trimmed(process.env.GUILD_WORKSPACE_ID),
-    agentId: trimmed(process.env.GUILD_AGENT_ID),
-    appUrl: trimmed(process.env.GUILD_APP_URL) || "https://app.guild.ai",
     webhookUrl: trimmed(process.env.GUILD_WEBHOOK_URL),
     signinSecret,
     webhookSigningSecret: signinSecret,
-    webhookSignatureHeader: trimmed(process.env.GUILD_WEBHOOK_SIGNATURE_HEADER) || "X-Guild-Signature",
+    webhookSignatureHeader: trimmed(process.env.GUILD_WEBHOOK_SIGNATURE_HEADER) || "X-Guild-Webhook-Signature",
     webhookEventType: trimmed(process.env.GUILD_WEBHOOK_EVENT_TYPE) || "xtrace.analysis.completed",
   };
 }
 
-/** Guild can create sessions directly only when keyed + workspace configured. */
-export function isGuildSessionApiReady(config = getGuildConfig()): boolean {
-  return config.enabled && Boolean(config.apiKey) && Boolean(config.workspaceId);
-}
-
-/** Guild can record a run via an inbound webhook + HMAC signin secret. */
+/** Guild can record a run via an inbound webhook; HMAC signing is used when configured. */
 export function isGuildWebhookReady(config = getGuildConfig()): boolean {
-  return config.enabled && Boolean(config.webhookUrl) && Boolean(config.signinSecret);
+  return config.enabled && Boolean(config.webhookUrl);
 }
 
 // --- Composio (action layer) ------------------------------------------------
@@ -88,15 +75,15 @@ export function getComposioConfig(): ComposioConfig {
 }
 
 export function isComposioGithubReady(config = getComposioConfig()): boolean {
-  return config.enabled && Boolean(config.apiKey) && Boolean(config.githubOwner) && Boolean(config.githubRepo);
+  return config.enabled && Boolean(config.apiKey) && Boolean(config.githubOwner) && Boolean(config.githubRepo) && Boolean(config.githubTool);
 }
 
 export function isComposioSlackReady(config = getComposioConfig()): boolean {
-  return config.enabled && Boolean(config.apiKey) && Boolean(config.slackChannelId);
+  return config.enabled && Boolean(config.apiKey) && Boolean(config.slackChannelId) && Boolean(config.slackTool);
 }
 
 export function isComposioNotionReady(config = getComposioConfig()): boolean {
-  return config.enabled && Boolean(config.apiKey) && Boolean(config.notionDatabaseId);
+  return config.enabled && Boolean(config.apiKey) && Boolean(config.notionDatabaseId) && Boolean(config.notionTool);
 }
 
 export function isComposioReady(config = getComposioConfig()): boolean {
@@ -171,13 +158,18 @@ export function sponsorAvailability() {
     render: { enabled: true, role: "hosts public web agent" },
     guild: {
       enabled: guild.enabled,
-      configured: guildWebhookConfigured || isGuildSessionApiReady(guild),
-      mode: guildWebhookConfigured ? "webhook" : isGuildSessionApiReady(guild) ? "session_api" : "none",
+      configured: guildWebhookConfigured,
+      mode: "webhook",
+      webhook_configured: Boolean(guild.webhookUrl),
+      signing_configured: Boolean(guild.signinSecret),
       role: "agent/session event trace",
     },
     composio: {
       enabled: composio.enabled,
       configured: isComposioReady(composio),
+      github_configured: isComposioGithubReady(composio),
+      slack_configured: isComposioSlackReady(composio),
+      notion_configured: isComposioNotionReady(composio),
       role: "external actions",
     },
     jua: {
@@ -207,9 +199,9 @@ export function buildSponsorStatuses(params: {
     render: { enabled: true, role: "hosts public web agent" },
     guild: {
       enabled: guild.enabled,
-      configured: isGuildWebhookReady(guild) || isGuildSessionApiReady(guild),
+      configured: isGuildWebhookReady(guild),
       status: guildStatus,
-      mode: isGuildWebhookReady(guild) ? "webhook" : "session_api",
+      mode: "webhook",
     },
     composio: { enabled: composio.enabled, configured: isComposioReady(composio) },
     openui: { enabled: isOpenUiEnabled() },

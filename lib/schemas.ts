@@ -168,7 +168,7 @@ export const mediaClaimSchema = z.object({
 export const realityContextSchema = z.object({
   provider: z.literal("Jua"),
   status: sponsorStatusSchema,
-  claim: z.string(),
+  claim: z.string().nullable().default(null),
   location: z.string().nullable().default(null),
   datetime: z.string().nullable().default(null),
   evidence: z.array(z.string()).default([]),
@@ -205,10 +205,13 @@ export const modelReadinessSchema = z.object({
 
 export const guildWebhookResultSchema = z.object({
   enabled: z.boolean(),
-  status: sponsorStatusSchema,
+  status: z.enum(["success", "failed", "unavailable"]),
   event_id: z.string().nullable(),
+  webhook_configured: z.boolean(),
   webhook_url_configured: z.boolean(),
+  signed: z.boolean(),
   event_type: z.string(),
+  agents: z.array(z.object({ name: z.string(), role: z.string() })).default([]),
   limitations: z.array(z.string()).default([]),
 });
 
@@ -246,6 +249,7 @@ export const actionReportPayloadSchema = z.object({
   signals: z.array(modelSignalSchema).default([]),
   reasoning_layer: reasoningLayerMetaSchema.optional(),
   guild_webhook: guildWebhookResultSchema.nullable().optional(),
+  reality_context: realityContextSchema.nullable().optional(),
   model_readiness: modelReadinessSchema.optional(),
 });
 

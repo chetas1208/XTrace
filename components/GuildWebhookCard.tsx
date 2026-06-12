@@ -6,7 +6,6 @@ const STATUS_CLASS: Record<GuildWebhookResult["status"], string> = {
   success: "border-green-verified/40 bg-green-verified/10 text-green-verified",
   failed: "border-red-risk/45 bg-red-risk/10 text-red-risk",
   unavailable: "border-amber-risk/40 bg-amber-risk/10 text-amber-risk",
-  skipped: "border-border bg-panel-soft text-text-secondary",
 };
 
 export function GuildWebhookCard({ webhook }: { webhook: GuildWebhookResult | null }) {
@@ -29,7 +28,7 @@ export function GuildWebhookCard({ webhook }: { webhook: GuildWebhookResult | nu
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Webhook configured</dt>
-          <dd className="mt-1 text-sm text-text-primary">{webhook?.webhook_url_configured ? "yes" : "no"}</dd>
+          <dd className="mt-1 text-sm text-text-primary">{webhook?.webhook_configured ? "yes" : "no"}</dd>
         </div>
         <div>
           <dt className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">Event type</dt>

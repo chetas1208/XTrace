@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AlertTriangle, Download, Layers3, Loader2 } from "lucide-react";
+import { AlertTriangle, Layers3, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { ActionPanel } from "@/components/ActionPanel";
 import { ClaudeReasoningCard } from "@/components/ClaudeReasoningCard";
 import { EvidenceGraph } from "@/components/EvidenceGraph";
+import { ExportReportCard } from "@/components/ExportReportCard";
 import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { HumanActionCard } from "@/components/HumanActionCard";
 import { LimitationsCard } from "@/components/LimitationsCard";
@@ -20,7 +21,6 @@ import { ResearchTraceCard } from "@/components/ResearchTraceCard";
 import { RiskScoreCard } from "@/components/RiskScoreCard";
 import { SignalCard } from "@/components/SignalCard";
 import { SponsorStatusCard } from "@/components/SponsorStatusCard";
-import { Button } from "@/components/ui/button";
 import type { JobEnvelope } from "@/types/traceproof";
 
 export default function ReportPage() {
@@ -227,16 +227,7 @@ export default function ReportPage() {
                   report_blocks: report.report_blocks,
                 }}
               />
-              <section className="xt-glass rounded-2xl p-5">
-                <h2 className="text-lg font-semibold text-text-primary">Export Report</h2>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  Signed PDF/JSON export is reserved for the production evidence-package pipeline.
-                </p>
-                <Button type="button" disabled variant="muted" className="mt-5 w-full">
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  Export unavailable
-                </Button>
-              </section>
+              <ExportReportCard report={report} />
             </div>
           </div>
         ) : null}

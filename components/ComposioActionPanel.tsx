@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 type ActionKey = "github" | "slack" | "notion";
 
 const ACTION_META: Record<ActionKey, { path: string; action: ComposioActionType; label: string }> = {
-  github: { path: "/api/actions/create-github-issue", action: "github_issue", label: "Create GitHub issue" },
-  slack: { path: "/api/actions/send-slack", action: "slack_summary", label: "Send Slack summary" },
-  notion: { path: "/api/actions/save-notion", action: "notion_page", label: "Save to Notion" },
+  github: { path: "/api/actions/create-github-issue", action: "github_issue", label: "Create GitHub Issue" },
+  slack: { path: "/api/actions/send-slack", action: "slack_summary", label: "Send Slack Summary" },
+  notion: { path: "/api/actions/save-notion", action: "notion_page", label: "Save Notion Page" },
 };
 
 function resultClass(status: ComposioActionResult["status"]): string {
@@ -21,7 +21,20 @@ function resultClass(status: ComposioActionResult["status"]): string {
   return "border-amber-risk/40 bg-amber-risk/10 text-amber-risk";
 }
 
-export function ActionPanel({ report }: { report: TraceProofReport }) {
+function emptyResult(action: ComposioActionType, message: string): ComposioActionResult {
+  return {
+    provider: "Composio",
+    action,
+    status: "failed",
+    external_url: null,
+    message,
+    raw: null,
+    url: null,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export function ComposioActionPanel({ report }: { report: TraceProofReport }) {
   const [pending, setPending] = useState<ActionKey | null>(null);
   const [results, setResults] = useState<Record<ActionKey, ComposioActionResult | null>>({
     github: null,
@@ -41,54 +54,43 @@ export function ActionPanel({ report }: { report: TraceProofReport }) {
       const data = (await response.json().catch(() => null)) as ComposioActionResult | null;
       setResults((prev) => ({
         ...prev,
-        [key]: data ?? {
-          provider: "Composio",
-          action: meta.action,
-          status: "failed",
-          external_url: null,
-          message: "No response from action route.",
-          raw: null,
-          url: null,
-          timestamp: new Date().toISOString(),
-        },
+        [key]: data ?? emptyResult(meta.action, "No response from action route."),
       }));
     } catch {
       setResults((prev) => ({
         ...prev,
-        [key]: {
-          provider: "Composio",
-          action: meta.action,
-          status: "failed",
-          external_url: null,
-          message: "Action request failed.",
-          raw: null,
-          url: null,
-          timestamp: new Date().toISOString(),
-        },
+        [key]: emptyResult(meta.action, "Action request failed."),
       }));
     } finally {
       setPending(null);
     }
   }
 
-  const icon = (key: ActionKey) => {
+  function icon(key: ActionKey) {
     if (pending === key) return <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />;
     if (key === "github") return <Github className="h-4 w-4" aria-hidden="true" />;
     if (key === "slack") return <Send className="h-4 w-4" aria-hidden="true" />;
     return <NotebookPen className="h-4 w-4" aria-hidden="true" />;
-  };
+  }
 
   return (
     <section className="xt-glass rounded-2xl p-5">
-      <h2 className="text-lg font-semibold text-text-primary">Actions</h2>
-      <p className="mt-2 text-sm leading-6 text-text-secondary">
-        Detection without action is just a score. Use Composio to route this XTrace forensic report into the tools your
-        team already uses.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-text-primary">Composio Actions</h2>
+        <span className="rounded-md border border-cyan-signal/35 bg-cyan-signal/10 px-2 py-1 text-xs text-cyan-signal">
+          actions after report
+        </span>
+      </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {(["github", "slack", "notion"] as ActionKey[]).map((key) => (
-          <Button key={key} type="button" variant="secondary" disabled={pending !== null} onClick={() => runAction(key)}>
+          <Button
+            key={key}
+            type="button"
+            variant={key === "github" ? "primary" : "secondary"}
+            disabled={pending !== null}
+            onClick={() => runAction(key)}
+          >
             {icon(key)}
             {ACTION_META[key].label}
           </Button>
@@ -98,13 +100,14 @@ export function ActionPanel({ report }: { report: TraceProofReport }) {
       {(["github", "slack", "notion"] as ActionKey[]).map((key) => {
         const result = results[key];
         if (!result) return null;
+        const url = result.external_url ?? result.url;
         return (
           <div key={key} className={cn("mt-3 rounded-md border px-3 py-2 text-sm", resultClass(result.status))}>
             <span className="font-medium capitalize">{result.status}</span>: {result.message}
-            {(result.external_url ?? result.url) ? (
+            {url ? (
               <>
                 {" "}
-                <a href={result.external_url ?? result.url ?? undefined} target="_blank" rel="noopener noreferrer" className="underline">
+                <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
                   view
                 </a>
               </>

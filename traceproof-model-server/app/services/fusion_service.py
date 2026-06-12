@@ -11,8 +11,6 @@ RISK_WEIGHTS = {
     "MesoNet": 0.35,
     "Deressa/GenConViT": 0.35,
     "Temporal Analyzer": 0.15,
-    "NVIDIA Parakeet ASR": 0.0,
-    "NVIDIA VLM": 0.0,
     "Provenance": 0.0,
 }
 

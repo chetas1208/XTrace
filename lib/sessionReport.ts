@@ -46,6 +46,7 @@ export function actionReportPayload(report: TraceProofReport) {
       signals: report.signals,
       reasoning_layer: report.reasoning_layer,
       guild_webhook: report.guild_webhook,
+      reality_context: report.reality_context,
       model_readiness: report.model_readiness,
     },
   };

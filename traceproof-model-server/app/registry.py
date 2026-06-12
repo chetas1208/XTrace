@@ -7,9 +7,7 @@ from app.models import (
     DIREDetector,
     GenConViTDetector,
     MesoNetDetector,
-    NvidiaVLM,
     OpenCLIPEmbedder,
-    ParakeetASR,
     TemporalAnalyzer,
     UniversalFakeDetect,
     Wav2Vec2AudioDetector,
@@ -31,11 +29,9 @@ class ModelRegistry:
             "dire": DIREDetector(settings.enable_dire, settings.cuda_image_device),
             "aasist": AASISTDetector(settings.enable_aasist, settings.cuda_audio_video_device),
             "wav2vec2": Wav2Vec2AudioDetector(settings.enable_wav2vec2_audio_detector, settings.cuda_audio_video_device),
-            "parakeet": ParakeetASR(settings.enable_parakeet, settings.cuda_audio_video_device),
             "mesonet": MesoNetDetector(settings.enable_mesonet, settings.cuda_audio_video_device),
             "genconvit": GenConViTDetector(settings.enable_genconvit, settings.cuda_audio_video_device),
             "temporal": TemporalAnalyzer(True, "cpu"),
-            "nvidia_vlm": NvidiaVLM(settings.enable_vlm, settings.cuda_image_device),
         }
 
     def get(self, key: str) -> BaseModelWrapper:

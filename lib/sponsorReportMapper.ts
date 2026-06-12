@@ -28,8 +28,13 @@ function signalSummaryLines(report: TraceProofReport): string[] {
 }
 
 function guildStatusLine(report: TraceProofReport): string {
-  if (!report.guild) return "Guild run ledger: unavailable";
-  return `Guild run ledger: ${report.guild.status}${report.guild.run_id ? ` (${report.guild.run_id})` : ""}`;
+  if (report.guild_webhook) return `Guild webhook status: ${report.guild_webhook.status}`;
+  if (!report.guild) return "Guild webhook status: unavailable";
+  return `Guild webhook status: ${report.guild.status}${report.guild.run_id ? ` (${report.guild.run_id})` : ""}`;
+}
+
+function juaStatusLine(report: TraceProofReport): string {
+  return `Jua reality-context status: ${report.reality_context?.status ?? "skipped"}`;
 }
 
 export function buildGithubIssueTitle(report: TraceProofReport): string {
@@ -38,39 +43,47 @@ export function buildGithubIssueTitle(report: TraceProofReport): string {
 
 export function buildGithubIssueBody(report: TraceProofReport): string {
   const lines: string[] = [];
-  lines.push(`## XTrace Forensic Report`);
+  lines.push("## Summary");
+  lines.push(report.summary || "XTrace report generated from model-backed forensic signals.");
   lines.push("");
-  lines.push(`- **Final label:** ${report.final_label}`);
-  lines.push(`- **Risk score:** ${num(report.risk_score)} / 100`);
-  lines.push(`- **Confidence:** ${report.confidence === null ? "N/A" : `${Math.round(report.confidence * 100)}%`}`);
-  lines.push(`- **Detected media type:** ${report.detected_media_type}`);
-  lines.push(`- **Job ID:** ${report.job_id}`);
-  lines.push(`- **Request ID:** ${report.request_id}`);
-  lines.push(`- **Claude model:** ${report.reasoning_layer.model ?? "deterministic fallback"} (${report.reasoning_layer.status})`);
-  lines.push(`- **${guildStatusLine(report)}**`);
+  lines.push("## Media type");
+  lines.push(`- File: ${report.file_name}`);
+  lines.push(`- Detected media type: ${report.detected_media_type}`);
   lines.push("");
-  lines.push(`### Summary`);
-  lines.push(report.summary);
+  lines.push("## Risk score");
+  lines.push(`- Final label: ${report.final_label}`);
+  lines.push(`- Risk score: ${num(report.risk_score)} / 100`);
   lines.push("");
-  lines.push(`### Strongest evidence`);
+  lines.push("## Confidence");
+  lines.push(`- Confidence: ${report.confidence === null ? "N/A" : `${Math.round(report.confidence * 100)}%`}`);
+  lines.push(`- Rationale: ${report.confidence_rationale || "N/A"}`);
+  lines.push("");
+  lines.push("## Strongest evidence");
   if (report.strongest_evidence.length) report.strongest_evidence.forEach((e) => lines.push(`- ${e}`));
   else lines.push("- (none reported)");
   lines.push("");
-  lines.push(`### Weakest / unavailable signals`);
+  lines.push("## Weakest evidence");
   if (report.weakest_evidence.length) report.weakest_evidence.forEach((e) => lines.push(`- ${e}`));
   else lines.push("- (none reported)");
   lines.push("");
-  lines.push(`### Limitations`);
+  lines.push("## Limitations");
   if (report.limitations.length) report.limitations.forEach((l) => lines.push(`- ${l}`));
   else lines.push("- (none reported)");
   lines.push("");
-  lines.push(`### Recommended human action`);
+  lines.push("## Recommended human action");
   lines.push(report.human_action);
   lines.push("");
-  lines.push(`### Model signals`);
+  lines.push("## Model signals");
   signalSummaryLines(report).forEach((l) => lines.push(l));
   lines.push("");
-  lines.push(`> ${NOT_DEFINITIVE_NOTE}`);
+  lines.push("## Guild webhook status");
+  lines.push(`- ${guildStatusLine(report)}`);
+  lines.push("");
+  lines.push("## Jua reality-context status");
+  lines.push(`- ${juaStatusLine(report)}`);
+  lines.push("");
+  lines.push("## Disclaimer");
+  lines.push(NOT_DEFINITIVE_NOTE);
   return lines.join("\n");
 }
 
@@ -110,6 +123,7 @@ export function buildNotionProperties(report: TraceProofReport, databaseId: stri
 
 export const REALITY_CONTEXT_KEYWORDS = [
   "weather",
+  "climate",
   "flood",
   "flooding",
   "wildfire",
@@ -128,12 +142,16 @@ export const REALITY_CONTEXT_KEYWORDS = [
   "wind",
   "drought",
   "disaster",
-  "earthquake",
+  "happened",
+  "date",
+  "time",
   "today",
   "yesterday",
   "tomorrow",
   "filmed in",
   "recorded in",
+  "filmed",
+  "recorded",
   "taken in",
   "location",
 ];
@@ -158,15 +176,15 @@ export function isRealityClaimRelevant(params: {
 }
 
 export const JUA_SKIP_MESSAGE =
-  "Jua skipped because no weather/location/time claim was provided.";
+  "No weather/location/time claim was provided, so Jua was skipped.";
 
-export function buildJuaSkippedSignal(claim: MediaClaim): RealityContextSignal {
+export function buildJuaSkippedSignal(claim?: Partial<MediaClaim> | null): RealityContextSignal {
   return {
     provider: "Jua",
     status: "skipped",
-    claim: claim.claim,
-    location: claim.location,
-    datetime: claim.datetime,
+    claim: claim?.claim || null,
+    location: claim?.location ?? null,
+    datetime: claim?.datetime ?? null,
     evidence: [],
     limitations: [JUA_SKIP_MESSAGE],
     reality_context_risk: null,
@@ -174,13 +192,13 @@ export function buildJuaSkippedSignal(claim: MediaClaim): RealityContextSignal {
   };
 }
 
-export function buildJuaUnavailableSignal(claim: MediaClaim, reason: string): RealityContextSignal {
+export function buildJuaUnavailableSignal(claim: Partial<MediaClaim> | null, reason: string): RealityContextSignal {
   return {
     provider: "Jua",
     status: "unavailable",
-    claim: claim.claim,
-    location: claim.location,
-    datetime: claim.datetime,
+    claim: claim?.claim || null,
+    location: claim?.location ?? null,
+    datetime: claim?.datetime ?? null,
     evidence: [],
     limitations: [reason],
     reality_context_risk: null,

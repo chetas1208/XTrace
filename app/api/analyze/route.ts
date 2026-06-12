@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { generateClaudeXTraceSummary } from "@/lib/server/anthropicClient";
-import { sendGuildAnalysisEvent } from "@/lib/server/guildWebhookClient";
+import { sendGuildAnalysisEvent, XTRACE_AGENT_PLAN } from "@/lib/server/guildWebhookClient";
 import { getJuaRealityContext } from "@/lib/server/juaClient";
 import { detectMediaType, sanitizeFileName } from "@/lib/server/mediaDetection";
 import {
@@ -20,7 +20,7 @@ import { deleteTempUpload, saveTempUpload } from "@/lib/server/tempUpload";
 import { mapAnalysisResponseToReport } from "@/lib/reportMapper";
 import { traceProofReportSchema } from "@/lib/schemas";
 import { baseFromExtension, MAX_UPLOAD_BYTES, UNSUPPORTED_FILE_MESSAGE } from "@/lib/utils";
-import type { AnalyzeResponse, MediaClaim } from "@/types/traceproof";
+import type { AnalyzeResponse, MediaClaim, ModelServerAnalysisResponse } from "@/types/traceproof";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +35,32 @@ function maxUploadBytes(): number {
 function requireRealModelServer(): boolean {
   const v = process.env.XTRACE_REQUIRE_REAL_MODEL_SERVER;
   return v === undefined ? true : v.toLowerCase() === "true" || v === "1";
+}
+
+function containsDisallowedVendor(value: string): boolean {
+  return /\bnvidia\b/i.test(value);
+}
+
+function enforceNoDisallowedVendorSignals(response: ModelServerAnalysisResponse): ModelServerAnalysisResponse {
+  const disallowedScoring = response.signals.filter(
+    (signal) =>
+      containsDisallowedVendor(signal.model_name) &&
+      signal.status === "success" &&
+      (signal.score !== null || signal.confidence !== null),
+  );
+  if (disallowedScoring.length > 0) {
+    throw new Error("Disallowed vendor model signal returned by model server.");
+  }
+
+  return {
+    ...response,
+    signals: response.signals.filter((signal) => !containsDisallowedVendor(signal.model_name)),
+    fusion: {
+      ...response.fusion,
+      strongest_evidence: response.fusion.strongest_evidence.filter((item) => !containsDisallowedVendor(item)),
+      limitations: response.fusion.limitations.filter((item) => !containsDisallowedVendor(item)),
+    },
+  };
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -132,7 +158,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json(body, { status: 503 });
     }
 
-    const response = await analyzeMediaViaTunnel({ filePath, fileName, mimeType });
+    const response = enforceNoDisallowedVendorSignals(
+      await analyzeMediaViaTunnel({ filePath, fileName, mimeType }),
+    );
 
     const postReadiness = toModelReadiness(
       validatePostAnalysisModelPolicy({ response, preReadiness: modalityReadiness }),
@@ -147,10 +175,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json(body, { status: 503 });
     }
 
-    let juaContext = null;
-    if (mediaClaim) {
-      juaContext = await getJuaRealityContext(mediaClaim);
-    }
+    const juaContext = await getJuaRealityContext({
+      claim: mediaClaim?.claim ?? null,
+      location: mediaClaim?.location ?? null,
+      datetime: mediaClaim?.datetime ?? null,
+    });
 
     const reasoning = await generateClaudeXTraceSummary({
       fileName,
@@ -179,7 +208,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       report: draftReport,
       modelServerResponse: response,
       claudeSummary: reasoning,
-      juaContext: juaContext ?? undefined,
+      juaContext,
+      agentPlan: XTRACE_AGENT_PLAN,
     });
 
     const sponsorStatuses = buildSponsorStatuses({

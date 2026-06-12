@@ -10,5 +10,4 @@ def analyze_audio(path: Path, normalize: bool = True) -> list[ModelSignal]:
     return [
         registry.get("aasist").analyze(audio_path),  # type: ignore[attr-defined]
         registry.get("wav2vec2").analyze(audio_path),  # type: ignore[attr-defined]
-        registry.get("parakeet").analyze(audio_path),  # type: ignore[attr-defined]
     ]

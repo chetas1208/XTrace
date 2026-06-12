@@ -3,14 +3,12 @@ import { buildDeterministicReasoning, dedupe } from "@/lib/reportMapper";
 import { claudeReasoningSchema } from "@/lib/schemas";
 import type {
   AgentStep,
-  GuildTrace,
+  ClaudeXTraceSummary,
   JuaRealityContext,
-  MediaClaim,
   ModelReadiness,
   ModelServerAnalysisResponse,
-  RealityContextSignal,
-  ReasoningLayerStatus,
   ReasoningSummary,
+  ReasoningLayerStatus,
   SponsorTrace,
   XTraceUIBlock,
 } from "@/types/traceproof";
@@ -137,6 +135,7 @@ function defaultAgentSteps(modelReadiness?: ModelReadiness): AgentStep[] {
       status: modelReadiness?.ready ? "success" : "unavailable",
       description: modelReadiness?.message ?? "GPU model inference completed.",
     },
+    { name: "Jua Reality Context", status: "skipped", description: "Weather/location/time context checked only when relevant." },
     { name: "Claude Reasoning", status: "success", description: "Evidence summarized by Anthropic Claude." },
     { name: "Guild Webhook", status: "skipped", description: "Guild event dispatch follows report generation." },
     { name: "XTrace Report", status: "success", description: "Structured forensic report assembled." },
@@ -204,7 +203,7 @@ export async function generateClaudeXTraceSummary(params: {
   juaContext?: JuaRealityContext;
   sponsorTrace?: SponsorTrace;
   optionalClaim?: { claim?: string; location?: string; datetime?: string };
-}): Promise<ReasoningSummary & { agent_steps: AgentStep[] }> {
+}): Promise<ClaudeXTraceSummary> {
   if (typeof window !== "undefined") {
     throw new Error("generateClaudeXTraceSummary must only run on the server.");
   }
@@ -231,13 +230,14 @@ export async function generateClaudeXTraceSummary(params: {
     status: ReasoningLayerStatus,
     model: string | null,
     note: string,
-  ): ReasoningSummary & { agent_steps: AgentStep[] } => ({
+  ): ClaudeXTraceSummary => ({
     ...fields,
     agent_steps: fields.agent_steps?.length ? fields.agent_steps : defaultAgentSteps(params.modelReadiness),
+    openui_blocks: fields.report_blocks,
     reasoning_layer: { provider: PROVIDER, model, status, note },
   });
 
-  const deterministicResult = (note: string): ReasoningSummary & { agent_steps: AgentStep[] } =>
+  const deterministicResult = (note: string): ClaudeXTraceSummary =>
     finalize(
       { ...deterministic, limitations: dedupe([...deterministic.limitations, ANTHROPIC_UNAVAILABLE_LIMITATION]) },
       "unavailable",
