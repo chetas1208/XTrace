@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --xt-cyan: #39d0ff;
+  --xt-purple: #a06bff;
+  --xt-grid: rgba(57, 208, 255, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% -5%, rgba(57, 208, 255, 0.14), transparent 32rem),
+    radial-gradient(circle at 88% 8%, rgba(160, 107, 255, 0.12), transparent 34rem),
+    linear-gradient(180deg, #06080d 0%, #0a0f18 48%, #06080d 100%);
+  color: #eef4ff;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(57, 208, 255, 0.35);
+}
+
+@layer components {
+  /* Forensic grid backdrop — fixed, subtle, behind everything. */
+  .xt-grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--xt-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--xt-grid) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(circle at 50% 30%, black, transparent 80%);
+  }
+
+  /* 3D glassmorphism panel. */
+  .xt-glass {
+    border: 1px solid rgba(57, 208, 255, 0.16);
+    background:
+      linear-gradient(160deg, rgba(20, 29, 41, 0.72), rgba(11, 16, 24, 0.62));
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 18px 60px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .xt-glass-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .xt-glass-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(57, 208, 255, 0.4);
+    box-shadow:
+      0 26px 80px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(57, 208, 255, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .xt-glow-cyan {
+    box-shadow: 0 0 28px rgba(57, 208, 255, 0.28);
+  }
+
+  .xt-text-gradient {
+    background: linear-gradient(120deg, #eaf6ff 0%, var(--xt-cyan) 45%, var(--xt-purple) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* CSS fallback orb when WebGL/3D is unavailable or reduced-motion is set. */
+  .xt-orb-fallback {
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(57, 208, 255, 0.85), rgba(57, 208, 255, 0) 55%),
+      radial-gradient(circle at 70% 75%, rgba(160, 107, 255, 0.7), rgba(160, 107, 255, 0) 58%),
+      conic-gradient(from 210deg, rgba(57, 208, 255, 0.25), rgba(160, 107, 255, 0.22), rgba(57, 208, 255, 0.25));
+    box-shadow:
+      0 0 80px rgba(57, 208, 255, 0.35),
+      inset 0 0 60px rgba(11, 16, 24, 0.65);
+  }
+}
+
+@keyframes xt-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes xt-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes xt-pulse-node {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.xt-animate-spin-slow {
+  animation: xt-spin-slow 26s linear infinite;
+}
+.xt-animate-float {
+  animation: xt-float 6s ease-in-out infinite;
+}
+.xt-animate-pulse-node {
+  animation: xt-pulse-node 2.4s ease-in-out infinite;
+}
+
+/* Respect reduced motion: stop all XTrace animations. */
+@media (prefers-reduced-motion: reduce) {
+  .xt-animate-spin-slow,
+  .xt-animate-float,
+  .xt-animate-pulse-node {
+    animation: none !important;
+  }
+}

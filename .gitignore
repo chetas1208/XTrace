@@ -1,0 +1,94 @@
+# ============================================================
+# XTrace — Git ignore (Next.js app + HPC model server)
+# ============================================================
+
+# --- Secrets (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials.json
+secrets.json
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Logs & debug ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+logs/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# --- Runtime uploads (ephemeral analysis files) ---
+uploads/
+traceproof-model-server/outputs/uploads/
+
+# --- Python (model server) ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+traceproof-model-server/.venv/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- HPC model server: large assets (download locally) ---
+traceproof-model-server/model_weights/*
+!traceproof-model-server/model_weights/README.md
+traceproof-model-server/third_party/*
+!traceproof-model-server/third_party/README.md
+traceproof-model-server/outputs/*
+!traceproof-model-server/outputs/.gitkeep
+
+# --- ML checkpoints (catch strays outside model_weights) ---
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.h5
+*.pb
+
+# --- Hugging Face / ML caches ---
+.cache/
+**/.cache/huggingface/
+.huggingface/
+
+# --- Cloudflare tunnel / local infra ---
+.cloudflared/
+*.trycloudflare.com
+
+# --- Cursor / agent (local IDE state) ---
+.cursor/

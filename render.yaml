@@ -1,0 +1,60 @@
+# Render blueprint for the XTrace public Next.js web service.
+# Deploy: push to a Git repo, then "New +" -> "Blueprint" in the Render dashboard.
+# All secret values are set in the Render dashboard, never committed.
+services:
+  - type: web
+    name: xtrace
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/system-status
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER_SERVICE_NAME
+        value: xtrace
+      - key: RENDER_ENV
+        value: production
+      # Server-side secrets — set these in the Render dashboard (sync: false):
+      - key: MODEL_SERVER_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_REPORT_MODEL
+        value: claude-sonnet-4-6
+      - key: ANTHROPIC_REPORT_FALLBACK_MODEL
+        value: claude-haiku-4-5
+      - key: GUILD_ENABLED
+        value: "true"
+      - key: GUILD_WEBHOOK_URL
+        sync: false
+      - key: GUILD_WEBHOOK_SIGNING_SECRET
+        sync: false
+      - key: GUILD_WEBHOOK_EVENT_TYPE
+        value: xtrace.analysis.completed
+      - key: REQUIRED_MODELS_STRICT
+        value: "true"
+      - key: XTRACE_REQUIRE_REAL_MODEL_SERVER
+        value: "true"
+      - key: XTRACE_STRICT_GPU_MODELS
+        value: "true"
+      - key: XTRACE_NO_MOCK
+        value: "true"
+      - key: COMPOSIO_ENABLED
+        value: "true"
+      - key: COMPOSIO_API_KEY
+        sync: false
+      - key: COMPOSIO_GITHUB_OWNER
+        sync: false
+      - key: COMPOSIO_GITHUB_REPO
+        sync: false
+      - key: COMPOSIO_SLACK_CHANNEL_ID
+        sync: false
+      - key: JUA_ENABLED
+        value: "false"
+      - key: JUA_API_KEY_ID
+        sync: false
+      - key: JUA_API_SECRET
+        sync: false

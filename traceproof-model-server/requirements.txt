@@ -1,0 +1,33 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+numpy
+scipy
+pillow
+opencv-python
+torch
+torchvision
+torchaudio
+torchcontrib
+transformers
+accelerate
+safetensors
+huggingface_hub
+open_clip_torch==2.32.0
+librosa
+soundfile
+ffmpeg-python
+imageio-ffmpeg
+python-dotenv
+requests
+aiofiles
+rich
+decord
+tensorflow
+timm==0.6.5
+PyYAML
+# Optional and fragile on some Python/CUDA combinations:
+# nemo_toolkit[asr]
+# mediapipe
