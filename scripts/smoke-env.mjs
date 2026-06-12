@@ -137,6 +137,33 @@ async function checkGuild(env) {
   }
 }
 
+async function checkGuildAgents(env) {
+  const enabled = (env.GUILD_ENABLED ?? "true").toLowerCase() !== "false";
+  if (!enabled) return record("Guild agents", "SKIP", "GUILD_ENABLED=false");
+  const appUrl = (env.GUILD_APP_URL || "https://app.guild.ai").trim().replace(/\/$/, "");
+  const base = (env.GUILD_API_BASE_URL || `${appUrl}/api`).trim().replace(/\/$/, "");
+  const owner = (env.GUILD_OWNER || "").trim();
+  const apiKey = (env.GUILD_API_KEY || "").trim();
+  const url = new URL(`${base}/agents`);
+  if (owner) url.searchParams.set("owner", owner);
+  url.searchParams.set("limit", "1");
+  const headers = { Accept: "application/json" };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+  const t = withTimeout(12000);
+  try {
+    const res = await fetch(url, { headers, signal: t.signal, cache: "no-store" });
+    if (!res.ok) return record("Guild agents", "FAIL", `HTTP ${res.status}`);
+    const data = await res.json();
+    const total = data?.pagination?.total_count ?? (Array.isArray(data?.items) ? data.items.length : 0);
+    const scope = owner ? `owner=${owner}` : "all public";
+    record("Guild agents", "PASS", `${total} agents readable (${scope})`);
+  } catch (e) {
+    record("Guild agents", "FAIL", e.name === "AbortError" ? "timed out" : "connection failed");
+  } finally {
+    t.done();
+  }
+}
+
 async function checkComposio(env) {
   const enabled = (env.COMPOSIO_ENABLED ?? "false").toLowerCase() === "true";
   const key = (env.COMPOSIO_API_KEY || "").trim();
@@ -210,6 +237,7 @@ async function main() {
   await checkModelServer(env);
   await checkAnthropic(env);
   await checkGuild(env);
+  await checkGuildAgents(env);
   await checkComposio(env);
   await checkJua(env);
 

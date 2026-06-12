@@ -9,6 +9,7 @@ import type {
   XTraceAgentPlan,
 } from "@/types/traceproof";
 import { getGuildConfig } from "@/lib/server/sponsorConfig";
+import { fetchGuildAgents } from "@/lib/server/guildApiClient";
 
 /**
  * Guild webhook integration — server-side only. No Guild API key required.
@@ -17,22 +18,17 @@ import { getGuildConfig } from "@/lib/server/sponsorConfig";
 const GUILD_TIMEOUT_MS = Number(process.env.GUILD_TIMEOUT_MS ?? 15000);
 const DEFAULT_EVENT_TYPE = "xtrace.analysis.completed";
 
+// Mirrors the user's real Guild agents (chetas~xtrace-*). The live roster is
+// fetched from the Guild control plane at request time; this is the fallback
+// description set used when the live fetch is unavailable.
 export const XTRACE_AGENT_PLAN: XTraceAgentPlan = [
-  { name: "xtrace-orchestrator", role: "coordinates analysis trace" },
+  { name: "xtrace-orchestrator", role: "coordinates the analysis trace across detectors, reasoning, and actions" },
   {
     name: "xtrace-evidence-auditor",
     role: "reviews GPU detector signals, required model readiness, unavailable models, and limitations",
   },
   {
-    name: "xtrace-action-reviewer",
-    role: "reviews whether the report should become a GitHub/Slack/Notion action through Composio",
-  },
-  {
-    name: "xtrace-reality-context-reviewer",
-    role: "reviews Jua context if the media includes weather/location/time claims",
-  },
-  {
-    name: "xtrace-report-governor",
+    name: "xtrace-report-reviewer",
     role: "verifies that Claude did not claim fake/real certainty or modify detector scores",
   },
 ];
@@ -57,8 +53,21 @@ export async function sendGuildAnalysisEvent(params: {
   const secret = signingSecret();
   const signed = Boolean(secret);
   const eventType = config.webhookEventType || DEFAULT_EVENT_TYPE;
-  const agentPlan = params.agentPlan?.length ? params.agentPlan : XTRACE_AGENT_PLAN;
-  const agents = [agentPlan[0] ?? XTRACE_AGENT_PLAN[0]];
+
+  // Fetch the owner's real agents live from the Guild control plane.
+  const live = await fetchGuildAgents();
+  const liveAgents = live.agents;
+
+  // Prefer the real, live agent roster as the plan; fall back to the static one.
+  const planFromLive: XTraceAgentPlan = liveAgents.map((a) => ({
+    name: a.name,
+    role: a.description || `${a.agent_type || "Guild"} agent (${a.status.toLowerCase()})`,
+  }));
+  const agentPlan: XTraceAgentPlan = planFromLive.length
+    ? planFromLive
+    : params.agentPlan?.length
+      ? params.agentPlan
+      : XTRACE_AGENT_PLAN;
 
   const baseResult = {
     event_id: null,
@@ -66,7 +75,10 @@ export async function sendGuildAnalysisEvent(params: {
     webhook_url_configured: webhookConfigured,
     signed,
     event_type: eventType,
-    agents,
+    agents: agentPlan,
+    live_agents: liveAgents,
+    live_agents_total: live.total,
+    live_agents_status: live.status,
   };
 
   if (!config.enabled) {
@@ -177,7 +189,10 @@ export async function sendGuildAnalysisEvent(params: {
         webhook_url_configured: true,
         signed,
         event_type: eventType,
-        agents,
+        agents: agentPlan,
+        live_agents: liveAgents,
+        live_agents_total: live.total,
+        live_agents_status: live.status,
         limitations: [`Guild webhook request failed (HTTP ${res.status}).`],
       };
     }
@@ -190,7 +205,10 @@ export async function sendGuildAnalysisEvent(params: {
       webhook_url_configured: true,
       signed,
       event_type: eventType,
-      agents,
+      agents: agentPlan,
+      live_agents: liveAgents,
+      live_agents_total: live.total,
+      live_agents_status: live.status,
       limitations: [
         "Guild records this XTrace investigation as an agent/session trace through a webhook trigger.",
         ...(signed ? [] : ["Guild webhook signing secret is not configured; event was sent unsigned."]),
@@ -206,7 +224,10 @@ export async function sendGuildAnalysisEvent(params: {
       webhook_url_configured: true,
       signed,
       event_type: eventType,
-      agents,
+      agents: agentPlan,
+      live_agents: liveAgents,
+      live_agents_total: live.total,
+      live_agents_status: live.status,
       limitations: ["Guild webhook request failed."],
     };
   } finally {

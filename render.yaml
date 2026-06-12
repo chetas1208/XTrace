@@ -47,6 +47,12 @@ services:
         sync: false
       - key: GUILD_WEBHOOK_EVENT_TYPE
         value: xtrace.analysis.completed
+      - key: GUILD_APP_URL
+        value: https://app.guild.ai
+      - key: GUILD_API_BASE_URL
+        value: https://app.guild.ai/api
+      - key: GUILD_OWNER
+        sync: false
       - key: REQUIRED_MODELS_STRICT
         value: "true"
       - key: XTRACE_REQUIRE_REAL_MODEL_SERVER

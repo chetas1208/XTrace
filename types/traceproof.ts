@@ -81,6 +81,20 @@ export interface ModelReadiness {
 }
 
 /** Guild webhook delivery result (no secrets). */
+/** A live agent fetched from the Guild AI control plane (`GET /api/agents`). */
+export interface GuildAgent {
+  id: string;
+  name: string;
+  full_name: string;
+  status: string;
+  agent_type: string;
+  description: string;
+  profile_url: string;
+  is_public: boolean;
+  installs_count: number;
+  updated_at: string | null;
+}
+
 export interface GuildWebhookResult {
   enabled: boolean;
   status: "success" | "failed" | "unavailable";
@@ -90,6 +104,10 @@ export interface GuildWebhookResult {
   signed: boolean;
   event_type: string;
   agents: XTraceAgentPlan;
+  /** Real agents fetched live from the Guild control plane for this owner. */
+  live_agents: GuildAgent[];
+  live_agents_total: number;
+  live_agents_status: "success" | "failed" | "unavailable";
   limitations: string[];
 }
 

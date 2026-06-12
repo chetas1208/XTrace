@@ -148,7 +148,7 @@ function balanceJson(input: string): string | null {
   let body = input;
   if (inString) body = body.slice(0, lastSafe + 1); // drop a half-written string value
   // Trim a dangling trailing comma or partial key before closing.
-  body = body.replace(/,\s*("[^"]*)?$/s, "");
+  body = body.replace(/,\s*("[^"]*)?$/, "");
   const closers = [...stack].reverse().join("");
   return body + closers;
 }

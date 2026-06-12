@@ -212,6 +212,24 @@ export const guildWebhookResultSchema = z.object({
   signed: z.boolean(),
   event_type: z.string(),
   agents: z.array(z.object({ name: z.string(), role: z.string() })).default([]),
+  live_agents: z
+    .array(
+      z.object({
+        id: z.string().default(""),
+        name: z.string(),
+        full_name: z.string().default(""),
+        status: z.string().default("UNKNOWN"),
+        agent_type: z.string().default(""),
+        description: z.string().default(""),
+        profile_url: z.string().default(""),
+        is_public: z.boolean().default(false),
+        installs_count: z.number().default(0),
+        updated_at: z.string().nullable().default(null),
+      }),
+    )
+    .default([]),
+  live_agents_total: z.number().default(0),
+  live_agents_status: z.enum(["success", "failed", "unavailable"]).default("unavailable"),
   limitations: z.array(z.string()).default([]),
 });
 

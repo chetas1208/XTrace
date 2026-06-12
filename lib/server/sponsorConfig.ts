@@ -24,11 +24,15 @@ export interface GuildConfig {
   webhookSigningSecret: string;
   webhookSignatureHeader: string;
   webhookEventType: string;
+  apiBaseUrl: string;
+  apiKey: string;
+  owner: string;
 }
 
 export function getGuildConfig(): GuildConfig {
   const signinSecret =
     trimmed(process.env.GUILD_WEBHOOK_SIGNING_SECRET) || trimmed(process.env.GUILD_SIGNIN_SECRET);
+  const appUrl = trimmed(process.env.GUILD_APP_URL) || "https://app.guild.ai";
   return {
     enabled: flag(process.env.GUILD_ENABLED, true),
     webhookUrl: trimmed(process.env.GUILD_WEBHOOK_URL),
@@ -36,7 +40,15 @@ export function getGuildConfig(): GuildConfig {
     webhookSigningSecret: signinSecret,
     webhookSignatureHeader: trimmed(process.env.GUILD_WEBHOOK_SIGNATURE_HEADER) || "X-Guild-Webhook-Signature",
     webhookEventType: trimmed(process.env.GUILD_WEBHOOK_EVENT_TYPE) || "xtrace.analysis.completed",
+    apiBaseUrl: trimmed(process.env.GUILD_API_BASE_URL) || `${appUrl.replace(/\/$/, "")}/api`,
+    apiKey: trimmed(process.env.GUILD_API_KEY),
+    owner: trimmed(process.env.GUILD_OWNER),
   };
+}
+
+/** Guild's agent-roster API is readable (the owner's public agents) without a key. */
+export function isGuildAgentsReady(config = getGuildConfig()): boolean {
+  return config.enabled && Boolean(config.apiBaseUrl);
 }
 
 /** Guild can record a run via an inbound webhook; HMAC signing is used when configured. */

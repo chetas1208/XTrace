@@ -1,4 +1,4 @@
-import { Webhook } from "lucide-react";
+import { Webhook, ExternalLink } from "lucide-react";
 import type { GuildWebhookResult } from "@/types/traceproof";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,13 @@ const STATUS_CLASS: Record<GuildWebhookResult["status"], string> = {
   failed: "border-red-risk/45 bg-red-risk/10 text-red-risk",
   unavailable: "border-amber-risk/40 bg-amber-risk/10 text-amber-risk",
 };
+
+function agentStatusClass(status: string): string {
+  const s = status.toUpperCase();
+  if (s === "READY") return "border-green-verified/40 bg-green-verified/10 text-green-verified";
+  if (s === "FAILED" || s === "ERROR") return "border-red-risk/45 bg-red-risk/10 text-red-risk";
+  return "border-cyan-signal/40 bg-cyan-signal/10 text-cyan-signal";
+}
 
 export function GuildWebhookCard({ webhook }: { webhook: GuildWebhookResult | null }) {
   const status = webhook?.status ?? "unavailable";
@@ -41,6 +48,58 @@ export function GuildWebhookCard({ webhook }: { webhook: GuildWebhookResult | nu
           </div>
         ) : null}
       </dl>
+
+      {webhook?.live_agents?.length ? (
+        <div className="mt-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[0.65rem] uppercase tracking-[0.14em] text-text-secondary">
+              Live Guild agents
+            </h3>
+            <span className="text-[0.65rem] text-text-secondary">
+              {webhook.live_agents.length} of {webhook.live_agents_total} fetched
+            </span>
+          </div>
+          <ul className="mt-2 space-y-2">
+            {webhook.live_agents.map((agent) => (
+              <li
+                key={agent.id || agent.full_name}
+                className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {agent.profile_url ? (
+                      <a
+                        href={agent.profile_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-text-primary hover:text-cyan-signal"
+                      >
+                        {agent.name}
+                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <span className="text-sm font-medium text-text-primary">{agent.name}</span>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-md border px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide",
+                      agentStatusClass(agent.status),
+                    )}
+                  >
+                    {agent.status.toLowerCase()}
+                  </span>
+                </div>
+                {agent.description ? (
+                  <p className="mt-1 text-xs leading-5 text-text-secondary">{agent.description}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : webhook && webhook.live_agents_status === "failed" ? (
+        <p className="mt-4 text-xs text-amber-risk">Live Guild agent roster could not be fetched.</p>
+      ) : null}
 
       {webhook?.limitations.length ? (
         <ul className="mt-4 space-y-1.5">
