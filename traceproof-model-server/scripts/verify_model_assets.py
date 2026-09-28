@@ -7,16 +7,19 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 
 ROOT = Path(__file__).resolve().parents[1]
+WEIGHTS = Path("/usr/data/models/traceproof/traceproof-model-server/model_weights")
 OUTPUT = ROOT / "outputs" / "model_inventory.json"
 
 
 def exists(path: str) -> bool:
+    if path.startswith("model_weights/"):
+        return (WEIGHTS / path.removeprefix("model_weights/")).exists()
     return (ROOT / path).exists()
 
 
 def hf_check(model_id: str) -> tuple[bool, str]:
     try:
-        snapshot_download(repo_id=model_id, local_dir=ROOT / "model_weights" / "huggingface" / model_id.replace("/", "-"))
+        snapshot_download(repo_id=model_id, local_dir=WEIGHTS / "huggingface" / model_id.replace("/", "-"))
         return True, "Hugging Face snapshot available"
     except Exception as exc:
         return False, f"Hugging Face download/load check failed: {exc}"
@@ -34,7 +37,7 @@ def item(model_name: str, active: bool, required_assets: list[str], assets_found
 
 
 def main() -> None:
-    os.environ.setdefault("HF_HOME", str(ROOT / "model_weights" / "huggingface"))
+    os.environ.setdefault("HF_HOME", str(WEIGHTS / "huggingface"))
     inventory: list[dict] = []
 
     ufd_path = "third_party/UniversalFakeDetect/pretrained_weights/fc_weights.pth"

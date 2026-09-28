@@ -3,6 +3,7 @@ from pathlib import Path
 from app.models.base import BaseModelWrapper
 from app.schemas import ModelSignal
 from app.utils import find_first_existing
+from config import settings
 
 
 class DIREDetector(BaseModelWrapper):
@@ -10,7 +11,9 @@ class DIREDetector(BaseModelWrapper):
     modality = "image"
 
     def load(self) -> None:
-        checkpoint = find_first_existing([Path("model_weights/DIRE"), Path("model_weights/dire.pth")])
+        checkpoint = find_first_existing(
+            [settings.model_weights_dir / "DIRE", settings.model_weights_dir / "dire.pth"]
+        )
         if not checkpoint:
             raise FileNotFoundError("DIRE checkpoint/config is missing")
         self.checkpoint_path = checkpoint

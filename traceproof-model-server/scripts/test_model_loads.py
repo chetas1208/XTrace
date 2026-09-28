@@ -19,9 +19,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+WEIGHTS = Path("/usr/data/models/traceproof/traceproof-model-server/model_weights")
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
-os.environ.setdefault("HF_HOME", str(ROOT / "model_weights" / "huggingface"))
+os.environ.setdefault("HF_HOME", str(WEIGHTS / "huggingface"))
 
 from config import settings  # noqa: E402
 

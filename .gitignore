@@ -66,6 +66,8 @@ htmlcov/
 # --- HPC model server: large assets (download locally) ---
 traceproof-model-server/model_weights/*
 !traceproof-model-server/model_weights/README.md
+traceproof-model-server/model_weights
+traceproof-model-server/.model_weights.local-mount
 traceproof-model-server/third_party/*
 !traceproof-model-server/third_party/README.md
 traceproof-model-server/outputs/*

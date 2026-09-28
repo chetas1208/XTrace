@@ -8,7 +8,7 @@ from rich.console import Console
 
 console = Console()
 ROOT = Path(__file__).resolve().parents[1]
-WEIGHTS = ROOT / "model_weights"
+WEIGHTS = Path("/usr/data/models/traceproof/traceproof-model-server/model_weights")
 WEIGHTS.mkdir(parents=True, exist_ok=True)
 
 

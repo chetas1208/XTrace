@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     deepfakebench_dir: Path = Path("third_party/DeepfakeBench")
     dire_model_path: str = ""
     rawnet2_model_path: str = ""
-    hf_home: Path = Path("model_weights/huggingface")
+    hf_home: Path = Path("/usr/data/models/traceproof/traceproof-model-server/model_weights/huggingface")
 
-    model_weights_dir: Path = Path("model_weights")
+    model_weights_dir: Path = Path("/usr/data/models/traceproof/traceproof-model-server/model_weights")
     output_dir: Path = Path("outputs")
 
     tunnel_provider: str = "cloudflare"
